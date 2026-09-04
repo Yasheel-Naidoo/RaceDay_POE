@@ -1,0 +1,55 @@
+﻿name: Validate Documentation & Repository Structure
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  validate-structure:
+    name: Verify Docs Folder and Core Deliverables
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Assert Required Files
+        run: |
+          FAILED=0
+
+          if [ ! -d "docs" ]; then
+            echo "::error::Missing 'docs' directory in the repository root."
+            FAILED=1
+          fi
+
+          if ! compgen -G "docs/*.sql" > /dev/null; then
+            echo "::error::Missing SQL database script (*.sql) inside /docs."
+            FAILED=1
+          fi
+
+          if ! compgen -G "docs/*erd*.[pP][nN][gG]" > /dev/null && \
+             ! compgen -G "docs/*erd*.[pP][dD][fF]" > /dev/null; then
+            echo "::error::Missing ERD diagram (.png or .pdf) inside /docs."
+            FAILED=1
+          fi
+
+          if ! compgen -G "docs/*plan*.[mM][dD]" > /dev/null && \
+             ! compgen -G "docs/*plan*.[pP][dD][fF]" > /dev/null && \
+             ! compgen -G "docs/*endpoint*.[mM][dD]" > /dev/null; then
+            echo "::error::Missing API Endpoint Plan document inside /docs."
+            FAILED=1
+          fi
+
+          if [ ! -f "README.md" ]; then
+            echo "::error::Missing README.md in root directory."
+            FAILED=1
+          fi
+
+          if [ $FAILED -ne 0 ]; then
+            echo "Structure validation failed. Ensure all files are placed in /docs."
+            exit 1
+          fi
+
+          echo "Repository structure and documentation validated successfully."
