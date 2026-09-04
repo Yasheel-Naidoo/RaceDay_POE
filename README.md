@@ -30,5 +30,5 @@ The repository utilizes GitHub Actions to validate the structure and presence of
 
 ## Video Demonstration
 
-* **Unlisted YouTube Walkthrough:** [Paste your unlisted YouTube link here]
+* **Unlisted YouTube Walkthrough:** https://youtu.be/K1jBfWLmOd8
 *(The video demonstrates ERD design choices, REST API endpoint planning, and an error-free top-to-bottom run of the SQL schema and verification queries in SSMS).*
