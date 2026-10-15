@@ -1,0 +1,45 @@
+name: Build, Test and Validate RaceDay Solution
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    name: Build & Run Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Validate Part 1 Documentation Folder
+        run: |
+          FAILED=0
+          if [ ! -d "docs" ]; then
+            echo "::error::Missing 'docs' directory in repository root."
+            FAILED=1
+          fi
+          if ! compgen -G "docs/*.sql" > /dev/null; then
+            echo "::error::Missing SQL schema file in docs/."
+            FAILED=1
+          fi
+          if [ $FAILED -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Restore Dependencies
+        run: dotnet restore RaceDay.sln
+
+      - name: Build Solution
+        run: dotnet build RaceDay.sln --no-restore --configuration Release
+
+      - name: Execute Unit Tests
+        run: dotnet test RaceDay.sln --no-build --configuration Release --verbosity normal
