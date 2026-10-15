@@ -1,0 +1,9 @@
+## Build outputs and user files
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.DS_Store
