@@ -1,70 +1,33 @@
-﻿# RaceDay – Event Management Platform (Part 1)
+Markdown
+# RaceDay – Event Management Platform
 
-RaceDay is a centralized, full-stack event management platform architected for South African road running, walking, and cycling events. It streamlines race operations by replacing manual entries with an integrated operational schema.
-
----
-
-## System Roles & Access Control
-
-* **Organiser:** Manages the operational event lifecycle. Organisers can create and edit events, define entry categories and quotas, view registered enrolments, and capture or update participant finish results.
-* **Participant:** Interacts with the event catalog. Participants can register personal accounts, maintain profiles and emergency contact details, browse upcoming events, enter specific race categories, and monitor their results history.
+RaceDay is a centralized, full-stack RESTful Web API and event management platform architected for South African road running, walking, and cycling events. It streamlines race operations by replacing manual entries with an integrated operational schema, automated bib allocation, quota enforcement, and role-based access control.
 
 ---
 
-## Planning Documentation
+## System Overview & Roles
+
+The system enforces strict role isolation via custom server-side session authorization filters (`RequireRoleAttribute`):
+
+* **Event Organiser:** Manages the operational event lifecycle. Organisers can create and edit events, define entry categories and quotas, view registered enrolments, and capture or update participant finish results.
+  * *Security Boundary:* Cannot enrol as an athlete in race events (returns `403 Forbidden`).
+* **Participant (Athlete):** Interacts with the event catalog. Participants can register personal accounts, maintain profiles and emergency contact details, browse upcoming events, enter specific race categories, and monitor their results history.
+  * *Security Boundary:* Cannot create, edit, or delete events or categories, and cannot capture finish results (returns `403 Forbidden`).
+
+---
+
+## Part 1: Design & Planning Documentation
 
 All system design and database planning artifacts are available in the `/docs` directory:
-* **Entity Relationship Diagram (ERD):** `docs/erd-diagram.pdf`
+* **Entity Relationship Diagram (ERD):** `docs/erd-diagram.png` (or `docs/erd-diagram.pdf`)
 * **REST API Endpoint Plan:** `docs/api-endpoint-plan.pdf`
 * **SQL Database Script:** `docs/schema-init.sql`
 
 ---
 
-## CI/CD Pipeline Verification
+## Part 2: Backend Architecture & Solution Structure
 
-The repository utilizes GitHub Actions to validate the structure and presence of all required documentation on every push and pull request.
-
-![CI/CD Build Status](docs/ci-build.png)
-
----
-
-## Video Demonstration
-
-* **Unlisted YouTube Walkthrough:** https://youtu.be/K1jBfWLmOd8
-*(The video demonstrates ERD design choices, REST API endpoint planning, and an error-free top-to-bottom run of the SQL schema and verification queries in SSMS).*
-
-# RaceDay – Event Management Platform (Part 2)
-
-RaceDay is a centralized, RESTful Web API designed to manage road running, cycling, and trail-walking events across South Africa[cite: 1, 2]. The platform provides event creation, category management, automated race bib allocation, capacity enforcement, and official finish time tracking[cite: 1, 2].
-
-Built with **ASP.NET Core (.NET 8)**, **Entity Framework Core Code-First**, and **SQL Server**, the system enforces server-side session authentication with PBKDF2 cryptographic password hashing and role-based access control[cite: 1, 2].
-
----
-
-## 1. System Roles & Access Control
-
-The API enforces strict role isolation via custom server-side session authorization filters (`RequireRoleAttribute`):
-
-* **Event Organiser:**
-  * Can register and authenticate to create, update, and cancel events.
-  * Creates distance categories with entry fees, distances, and participant limits.
-  * Inspects participant enrolment rosters.
-  * Captures and updates official athlete finish times and positions.
-  * *Restriction:* Cannot enrol as an athlete in race events (returns `403 Forbidden`).
-
-* **Participant (Athlete):**
-  * Registers and authenticates to manage personal profiles and emergency contact details.
-  * Browses public upcoming events and category details.
-  * Enrols into race categories, triggering automated bib number generation.
-  * Withdraws from enrolled categories.
-  * Views personal race performance and historical results.
-  * *Restriction:* Cannot create, edit, or delete events or categories, and cannot capture finish results (returns `403 Forbidden`).
-
----
-
-## 2. Project Architecture & Solution Structure
-
-The project strictly follows a decoupled enterprise multi-layer architecture, maintaining clean isolation between production source code and test projects:
+Built with **ASP.NET Core (.NET 8)**, **Entity Framework Core Code-First**, and **SQL Server**, the solution adheres to an enterprise multi-layered architecture separating source code from automated test assemblies:
 
 ```text
 RaceDay/
@@ -92,3 +55,35 @@ RaceDay/
 │       └── RaceDay.Tests.csproj
 ├── README.md                        # Project documentation and walkthrough guide
 └── RaceDay.sln                      # Visual Studio / .NET root solution file
+```
+CI/CD Pipeline Verification
+The repository utilizes GitHub Actions (.github/workflows/build-and-test.yml) to validate the solution on every push and pull request against ubuntu-latest. The workflow restores dependencies, compiles RaceDay.sln in Release mode, and runs all xUnit tests.
+
+Video Demonstrations
+Part 1 Video Walkthrough (Unlisted): https://youtu.be/K1jBfWLmOd8
+
+(Demonstrates ERD design choices, REST API endpoint planning, and an error-free run of the SQL schema in SSMS).
+
+Part 2 Video Walkthrough (Unlisted): [Insert Your Part 2 YouTube Link Here]
+
+(Demonstrates Swagger UI endpoints, Organiser vs Participant security boundaries, live bib allocation, result capturing, and automated terminal unit tests).
+
+Lecturer Evaluation & Testing Guide
+This guide provides an end-to-end evaluation pathway to verify all functional requirements, security boundaries, database integrity rules, automated tests, and CI/CD pipelines.
+
+1. Rapid Setup & Execution
+Run the following commands sequentially in terminal/PowerShell from the repository root (RaceDay):
+
+```Bash
+# 1. Restore solution dependencies
+dotnet restore RaceDay.sln
+
+# 2. Build in Release mode
+dotnet build RaceDay.sln --no-restore
+
+# 3. Execute all automated xUnit tests
+dotnet test RaceDay.sln --no-build
+
+# 4. Launch the Web API
+dotnet run --project src/RaceDay.Api
+```
