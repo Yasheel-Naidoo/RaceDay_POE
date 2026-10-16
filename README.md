@@ -86,3 +86,4 @@ dotnet test RaceDay.sln --no-build
 # 4. Launch the Web API
 dotnet run --project src/RaceDay.Api
 ```
+Swagger UI URL: Open http://localhost:5000 (or http://localhost:5195/index.html) in any browser.
