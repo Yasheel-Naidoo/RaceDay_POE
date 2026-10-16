@@ -63,7 +63,7 @@ Part 1 Video Walkthrough (Unlisted): https://youtu.be/K1jBfWLmOd8
 
 (Demonstrates ERD design choices, REST API endpoint planning, and an error-free run of the SQL schema in SSMS).
 
-Part 2 Video Walkthrough (Unlisted): [Insert Your Part 2 YouTube Link Here]
+Part 2 Video Walkthrough (Unlisted): https://youtu.be/KOAxe6X7Ubs
 
 (Demonstrates Swagger UI endpoints, Organiser vs Participant security boundaries, live bib allocation, result capturing, and automated terminal unit tests).
 
