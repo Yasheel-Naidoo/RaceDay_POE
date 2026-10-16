@@ -1,4 +1,3 @@
-Markdown
 # RaceDay – Event Management Platform
 
 RaceDay is a centralized, full-stack RESTful Web API and event management platform architected for South African road running, walking, and cycling events. It streamlines race operations by replacing manual entries with an integrated operational schema, automated bib allocation, quota enforcement, and role-based access control.
