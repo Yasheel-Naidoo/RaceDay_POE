@@ -237,7 +237,7 @@ Swagger at <http://localhost:5000/swagger> documents the request and response sh
 
 ## 7. Suggested demonstration video script
 
-The rubric asks for the video to explain the **code structure** and cover what the application does in detail, so this outline is deliberately paced (roughly 10–12 minutes) instead of clicking through screens quickly.
+The rubric asks for the video to explain the **code structure** and cover what the application does in detail, so this outline is deliberately paced (roughly 10–12 minutes) instead of clicking through screens quickly. A word-for-word narration script with timings, screen cues, a recording checklist and answers to likely questions is in [`docs/part3-video-script.md`](docs/part3-video-script.md).
 
 | Time | Section | Talk through |
 |---|---|---|
