@@ -239,21 +239,6 @@ Swagger at <http://localhost:5000/swagger> documents the request and response sh
 
 The rubric asks for the video to explain the **code structure** and cover what the application does in detail, so this outline is deliberately paced (roughly 10–12 minutes) instead of clicking through screens quickly. A word-for-word narration script with timings, screen cues, a recording checklist and answers to likely questions is in [`docs/part3-video-script.md`](docs/part3-video-script.md).
 
-| Time | Section | Talk through |
-|---|---|---|
-| 0:00–0:45 | Introduction | What RaceDay does, the three roles (public, participant, organiser), which projects make up the solution and where they live |
-| 0:45–2:00 | Running it | Show the two terminals (`dotnet run` for API then MVC), the ports, Swagger at 5000, and the MVC home page. Mention that the API creates and seeds the LocalDB database on first run |
-| 2:00–4:00 | Code structure | Walk the solution tree: `Controllers` → `DTOs` → `DbContext` → `Models`; then the MVC side: `EventController` → `IRaceDayApiClient` → API controller → EF Core. Open `Program.cs` in both projects and explain DI, session, and the typed `HttpClient`. Open `ApiSessionCookieHandler` and explain why the API session must travel with each MVC user |
-| 4:00–6:00 | Participant journey | Register/login, dashboard, browse catalogue, open an event, enrol (show the generated bib), show the duplicate/capacity/closed-event messages, show results on the dashboard |
-| 6:00–8:30 | Organiser journey | Create an event with two categories and a banner, edit it, manage categories (duplicate-name rejection, delete rules), open the roster, capture a result, update it, export the CSV and open it |
-| 8:30–10:00 | Rules and security | Point at the role checks and ownership comparisons in `OrganiserController` and the API controllers; show a participant hitting an organiser URL and being refused; show a closed event hiding the enrol form; show delete being refused when enrolments exist |
-| 10:00–11:30 | Tests and CI | Run `dotnet test RaceDay.sln`, explain that the tests use EF Core InMemory and a fake session, name what each test asserts, then show the GitHub Actions run (restore → build → test → Docker images) |
-| 11:30–12:00 | Wrap-up | Summarise the architecture and the rules enforced end to end; mention where to find the README and design documents |
-
-Practical tips: record at 1080p with microphone audio, keep a terminal and Visual Studio/VS Code side by side, zoom the editor font, and narrate *why* each check exists rather than only clicking.
-
----
-
 ## 8. Troubleshooting
 
 | Symptom | Cause / fix |
