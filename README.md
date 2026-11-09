@@ -282,4 +282,4 @@ The same two Dockerfiles are built by the CI pipeline to prove they compile.
 
 * Part 1 (design, ERD, endpoint planning): <https://youtu.be/K1jBfWLmOd8>
 * Part 2 (API, Swagger, security boundaries, tests): <https://youtu.be/KOAxe6X7Ubs>
-* Part 3 (MVC client, end-to-end flows, code structure): _add the link here before submitting_
+* Part 3 (MVC client, end-to-end flows, code structure): https://youtu.be/-4GRbT_Nz0o
