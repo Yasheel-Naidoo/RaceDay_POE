@@ -1,0 +1,86 @@
+@model RaceDay.Mvc.Models.EditEventViewModel
+@{
+    ViewData["Title"] = "Edit Race Event";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Edit Event: @Model.EventName</h5>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="EditEvent" method="post" enctype="multipart/form-data">
+                    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+                    <input type="hidden" asp-for="EventID" />
+
+                    <div class="mb-3">
+                        <label asp-for="EventName" class="form-label"></label>
+                        <input asp-for="EventName" class="form-control" />
+                        <span asp-validation-for="EventName" class="text-danger small"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="EventDate" class="form-label"></label>
+                            <input asp-for="EventDate" class="form-control" />
+                            <span asp-validation-for="EventDate" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="StartTime" class="form-label"></label>
+                            <input asp-for="StartTime" class="form-control" />
+                            <span asp-validation-for="StartTime" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="VenueID" class="form-label">Venue Location</label>
+                            <select asp-for="VenueID" class="form-select">
+                                <option value="1">FNB Stadium Precinct (Johannesburg)</option>
+                                <option value="2">Green Point Stadium Precinct (Cape Town)</option>
+                                <option value="3">uMngeni River Park (Pietermaritzburg)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Status" class="form-label">Event Status</label>
+                            <select asp-for="Status" class="form-select">
+                                <option value="Open">Open</option>
+                                <option value="Closed">Closed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Description" class="form-label"></label>
+                        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                        <span asp-validation-for="Description" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Event Banner</label>
+                        @if (!string.IsNullOrEmpty(Model.BannerImageUrlResolved))
+                        {
+                            <img src="@Model.BannerImageUrlResolved" alt="Current banner" class="d-block mb-2 rounded" style="height: 120px; object-fit: cover;" onerror="this.style.display='none'" />
+                        }
+                        <input type="file" name="bannerImage" accept=".jpg,.jpeg,.png,.webp" class="form-control" />
+                        <div class="form-text">Leave empty to keep the current banner. JPG, PNG or WebP up to 5 MB.</div>
+                        @if (!string.IsNullOrEmpty(Model.BannerImageUrlResolved))
+                        {
+                            <div class="form-check mt-2">
+                                <input asp-for="RemoveBanner" class="form-check-input" />
+                                <label asp-for="RemoveBanner" class="form-check-label">Remove the current banner</label>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-primary flex-grow-1 py-2">Save Changes</button>
+                        <a asp-action="ManageCategories" asp-route-id="@Model.EventID" class="btn btn-outline-warning py-2">Manage categories</a>
+                        <a asp-action="Dashboard" class="btn btn-outline-secondary py-2">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

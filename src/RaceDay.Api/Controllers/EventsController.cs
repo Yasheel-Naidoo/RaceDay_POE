@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RaceDay.Api.Data;
 using RaceDay.Api.DTOs;
-using RaceDay.Api.Filters;
 using RaceDay.Api.Models;
+using RaceDay.Api.Services;
 
 namespace RaceDay.Api.Controllers
 {
@@ -12,46 +12,58 @@ namespace RaceDay.Api.Controllers
     public class EventsController : ControllerBase
     {
         private readonly RaceDayDbContext _context;
-        public EventsController(RaceDayDbContext context) => _context = context;
+        private readonly IBlobService _blobService;
 
-        /// <summary>
-        /// Lists all upcoming events with optional status filtering.
-        /// </summary>
-        [HttpGet]
-        public async Task<IActionResult> GetEvents([FromQuery] string? status)
+        public EventsController(RaceDayDbContext context, IBlobService blobService)
         {
-            var query = _context.Events.AsQueryable();
+            _context = context;
+            _blobService = blobService;
+        }
 
-            if (!string.IsNullOrEmpty(status))
+        [HttpGet]
+        public async Task<IActionResult> GetEvents([FromQuery] string? search = null)
+        {
+            var today = DateTime.UtcNow.Date;
+
+            var query = _context.Events
+                .Include(e => e.Organiser)
+                .Include(e => e.Venue)
+                .Include(e => e.Categories)
+                    .ThenInclude(c => c.Enrolments)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
             {
-                query = query.Where(e => e.Status == status);
+                search = search.Trim().ToLower();
+                query = query.Where(e => e.EventName.ToLower().Contains(search) ||
+                                         e.Venue.City.ToLower().Contains(search) ||
+                                         e.Categories.Any(c => c.CategoryName.ToLower().Contains(search)));
             }
 
             var events = await query
+                .OrderBy(e => e.EventDate)
                 .Select(e => new EventResponseDto(
                     e.EventID,
                     e.EventName,
                     e.EventDate,
                     e.StartTime,
+                    e.EventDate < today ? "Closed" : e.Status,
                     e.Description,
-                    e.Status,
+                    e.BannerImageUrl,
                     e.OrganiserID,
-                    e.CreatedAt,
-                    e.Venue == null ? null : new VenueResponseDto(
-                        e.Venue.VenueID,
-                        e.Venue.VenueName,
-                        e.Venue.Address,
-                        e.Venue.City,
-                        e.Venue.Province,
-                        e.Venue.PostalCode,
-                        e.Venue.RouteDescription
-                    ),
+                    e.Organiser.FullName,
+                    e.VenueID,
+                    e.Venue.VenueName,
+                    e.Venue.City,
+                    e.Venue.Province,
                     e.Categories.Select(c => new CategoryResponseDto(
                         c.CategoryID,
+                        c.EventID,
                         c.CategoryName,
                         c.DistanceKm,
                         c.EntryFee,
-                        c.MaxParticipants
+                        c.MaxParticipants,
+                        c.Enrolments.Count(en => en.Status != "Withdrawn")
                     )).ToList()
                 ))
                 .ToListAsync();
@@ -59,56 +71,57 @@ namespace RaceDay.Api.Controllers
             return Ok(events);
         }
 
-        /// <summary>
-        /// Returns details of a specific event by ID.
-        /// </summary>
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetEventById(int id)
         {
             var ev = await _context.Events
-                .Where(e => e.EventID == id)
-                .Select(e => new EventResponseDto(
-                    e.EventID,
-                    e.EventName,
-                    e.EventDate,
-                    e.StartTime,
-                    e.Description,
-                    e.Status,
-                    e.OrganiserID,
-                    e.CreatedAt,
-                    e.Venue == null ? null : new VenueResponseDto(
-                        e.Venue.VenueID,
-                        e.Venue.VenueName,
-                        e.Venue.Address,
-                        e.Venue.City,
-                        e.Venue.Province,
-                        e.Venue.PostalCode,
-                        e.Venue.RouteDescription
-                    ),
-                    e.Categories.Select(c => new CategoryResponseDto(
-                        c.CategoryID,
-                        c.CategoryName,
-                        c.DistanceKm,
-                        c.EntryFee,
-                        c.MaxParticipants
-                    )).ToList()
-                ))
-                .FirstOrDefaultAsync();
+                .Include(e => e.Organiser)
+                .Include(e => e.Venue)
+                .Include(e => e.Categories)
+                    .ThenInclude(c => c.Enrolments)
+                .FirstOrDefaultAsync(e => e.EventID == id);
 
-            return ev == null ? NotFound(new { message = "Event not found." }) : Ok(ev);
+            if (ev == null) return NotFound(new { message = "Event not found." });
+
+            var dto = new EventResponseDto(
+                ev.EventID,
+                ev.EventName,
+                ev.EventDate,
+                ev.StartTime,
+                ev.EventDate.Date < DateTime.UtcNow.Date ? "Closed" : ev.Status,
+                ev.Description,
+                ev.BannerImageUrl,
+                ev.OrganiserID,
+                ev.Organiser.FullName,
+                ev.VenueID,
+                ev.Venue.VenueName,
+                ev.Venue.City,
+                ev.Venue.Province,
+                ev.Categories.Select(c => new CategoryResponseDto(
+                    c.CategoryID,
+                    c.EventID,
+                    c.CategoryName,
+                    c.DistanceKm,
+                    c.EntryFee,
+                    c.MaxParticipants,
+                    c.Enrolments.Count(en => en.Status != "Withdrawn")
+                )).ToList()
+            );
+
+            return Ok(dto);
         }
 
-        /// <summary>
-        /// Creates a new event owned by the logged-in organiser.
-        /// </summary>
         [HttpPost]
-        [RequireRole("Organiser")]
         public async Task<IActionResult> CreateEvent([FromBody] CreateEventDto dto)
         {
-            var organiserId = HttpContext.Session.GetInt32("UserId")!.Value;
+            var role = HttpContext.Session.GetString("Role");
+            var userId = HttpContext.Session.GetInt32("UserId");
 
-            var venueExists = await _context.Venues.AnyAsync(v => v.VenueID == dto.VenueId);
-            if (!venueExists) return BadRequest(new { message = "Specified Venue ID does not exist." });
+            if (role != "Organiser" || !userId.HasValue)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Forbidden. This action requires the 'Organiser' role." });
+
+            if (dto.EventDate.Date < DateTime.UtcNow.Date)
+                return BadRequest(new { message = "The event date cannot be in the past." });
 
             var ev = new Event
             {
@@ -117,73 +130,123 @@ namespace RaceDay.Api.Controllers
                 StartTime = dto.StartTime,
                 VenueID = dto.VenueId,
                 Description = dto.Description,
-                OrganiserID = organiserId,
-                Status = "Open"
+                OrganiserID = userId.Value,
+                Status = "Open",
+                CreatedAt = DateTime.UtcNow
             };
 
             _context.Events.Add(ev);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetEventById), new { id = ev.EventID }, new EventResponseDto(
+            var responseDto = new EventResponseDto(
                 ev.EventID,
                 ev.EventName,
                 ev.EventDate,
                 ev.StartTime,
-                ev.Description,
                 ev.Status,
+                ev.Description,
+                ev.BannerImageUrl,
                 ev.OrganiserID,
-                ev.CreatedAt,
-                null,
+                "Organiser",
+                ev.VenueID,
+                "Venue",
+                "City",
+                "Province",
                 new List<CategoryResponseDto>()
-            ));
+            );
+
+            return StatusCode(StatusCodes.Status201Created, responseDto);
         }
 
-        /// <summary>
-        /// Updates an existing event owned by the organiser.
-        /// </summary>
-        [HttpPut("{id}")]
-        [RequireRole("Organiser")]
+        [HttpPut("{id:int}")]
         public async Task<IActionResult> UpdateEvent(int id, [FromBody] UpdateEventDto dto)
         {
-            var organiserId = HttpContext.Session.GetInt32("UserId")!.Value;
+            var role = HttpContext.Session.GetString("Role");
+            var userId = HttpContext.Session.GetInt32("UserId");
+
             var ev = await _context.Events.FindAsync(id);
             if (ev == null) return NotFound(new { message = "Event not found." });
 
-            if (ev.OrganiserID != organiserId)
-                return StatusCode(StatusCodes.Status403Forbidden, new { message = "You are not the owner of this event." });
+            if (role != "Organiser" || ev.OrganiserID != userId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Forbidden. You can only modify your own events." });
 
-            if (dto.EventName != null) ev.EventName = dto.EventName;
-            if (dto.EventDate.HasValue) ev.EventDate = dto.EventDate.Value;
-            if (dto.StartTime.HasValue) ev.StartTime = dto.StartTime;
-            if (dto.Description != null) ev.Description = dto.Description;
-            if (dto.Status != null) ev.Status = dto.Status;
+            ev.EventName = dto.EventName;
+            ev.EventDate = dto.EventDate;
+            ev.StartTime = dto.StartTime;
+            ev.VenueID = dto.VenueId;
+            ev.Description = dto.Description;
+            ev.Status = dto.Status;
 
             await _context.SaveChangesAsync();
-            return Ok(ev);
+            return Ok(new { message = "Event updated successfully." });
         }
 
-        /// <summary>
-        /// Deletes an event provided it has no enrolments.
-        /// </summary>
-        [HttpDelete("{id}")]
-        [RequireRole("Organiser")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteEvent(int id)
         {
-            var organiserId = HttpContext.Session.GetInt32("UserId")!.Value;
-            var ev = await _context.Events.Include(e => e.Categories).FirstOrDefaultAsync(e => e.EventID == id);
+            var role = HttpContext.Session.GetString("Role");
+            var userId = HttpContext.Session.GetInt32("UserId");
+
+            var ev = await _context.Events
+                .Include(e => e.Categories)
+                    .ThenInclude(c => c.Enrolments)
+                .FirstOrDefaultAsync(e => e.EventID == id);
+
             if (ev == null) return NotFound(new { message = "Event not found." });
 
-            if (ev.OrganiserID != organiserId)
-                return StatusCode(StatusCodes.Status403Forbidden, new { message = "You are not the owner of this event." });
+            if (role != "Organiser" || ev.OrganiserID != userId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Forbidden. You can only delete your own events." });
 
-            var categoryIds = ev.Categories.Select(c => c.CategoryID).ToList();
-            var hasEnrolments = await _context.Enrolments.AnyAsync(e => categoryIds.Contains(e.CategoryID));
-            if (hasEnrolments)
-                return Conflict(new { message = "Cannot delete an event with existing enrolments. Cancel it instead." });
+            if (ev.Categories.Any(c => c.Enrolments.Any()))
+                return Conflict(new { message = "This event already has enrolments, so it cannot be deleted." });
+
+            var bannerUrl = ev.BannerImageUrl;
 
             _context.Events.Remove(ev);
             await _context.SaveChangesAsync();
-            return NoContent();
+
+            if (!string.IsNullOrEmpty(bannerUrl) &&
+                bannerUrl.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase))
+            {
+                await _blobService.DeleteFileAsync(bannerUrl);
+            }
+
+            return Ok(new { message = "Event deleted." });
+        }
+
+        [HttpGet("{id:int}/enrolments")]
+        public async Task<IActionResult> GetEventEnrolments(int id)
+        {
+            var role = HttpContext.Session.GetString("Role");
+            var userId = HttpContext.Session.GetInt32("UserId");
+
+            var ev = await _context.Events.FindAsync(id);
+            if (ev == null) return NotFound(new { message = "Event not found." });
+
+            if (role != "Organiser" || ev.OrganiserID != userId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Forbidden. You can only view participant rosters for your own events." });
+
+            var enrolments = await _context.Enrolments
+                .Include(e => e.Participant)
+                .Include(e => e.Category)
+                .Where(e => e.Category.EventID == id)
+                .Select(e => new EnrolmentResponseDto(
+                    e.EnrolmentID,
+                    e.ParticipantID,
+                    e.Participant.FullName,
+                    e.CategoryID,
+                    e.Category.CategoryName,
+                    e.Category.DistanceKm,
+                    ev.EventID,
+                    ev.EventName,
+                    ev.EventDate,
+                    e.BibNumber,
+                    e.Status,
+                    e.EnrolmentDate
+                ))
+                .ToListAsync();
+
+            return Ok(enrolments);
         }
     }
 }

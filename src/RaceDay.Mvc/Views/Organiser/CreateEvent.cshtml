@@ -1,0 +1,126 @@
+@model RaceDay.Mvc.Models.CreateEventViewModel
+@{
+    ViewData["Title"] = "Host New Race Event";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Create Event & Upload Banner</h5>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="CreateEvent" method="post" enctype="multipart/form-data">
+                    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="EventName" class="form-label"></label>
+                        <input asp-for="EventName" class="form-control" />
+                        <span asp-validation-for="EventName" class="text-danger small"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="EventDate" class="form-label"></label>
+                            <input asp-for="EventDate" class="form-control" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="StartTime" class="form-label"></label>
+                            <input asp-for="StartTime" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="VenueID" class="form-label">Venue Location</label>
+                        <select asp-for="VenueID" class="form-select">
+                            <option value="1">FNB Stadium Precinct (Johannesburg)</option>
+                            <option value="2">Green Point Stadium Precinct (Cape Town)</option>
+                            <option value="3">uMngeni River Park (Pietermaritzburg)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label"></label>
+                        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label fw-bold mb-0">Race Categories</label>
+                            <button type="button" id="addCategory" class="btn btn-sm btn-outline-warning">
+                                <i class="bi bi-plus-circle me-1"></i> Add category
+                            </button>
+                        </div>
+                        <p class="text-muted small mb-2">Athletes enter one of these distances, so add at least one.</p>
+                        <div id="categoryRows">
+                            @for (var i = 0; i < Model.Categories.Count; i++)
+                            {
+                                <div class="row g-2 align-items-end mb-2 category-row">
+                                    <div class="col-md-4">
+                                        <label class="form-label small">Name</label>
+                                        <input name="Categories[@i].CategoryName" value="@Model.Categories[i].CategoryName" class="form-control" placeholder="10km Fun Run" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Distance (km)</label>
+                                        <input name="Categories[@i].DistanceKm" value="@Model.Categories[i].DistanceKm" type="number" step="0.01" min="0.1" class="form-control" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Entry fee</label>
+                                        <input name="Categories[@i].EntryFee" value="@Model.Categories[i].EntryFee" type="number" step="0.01" min="0" class="form-control" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Max entries</label>
+                                        <input name="Categories[@i].MaxParticipants" value="@Model.Categories[i].MaxParticipants" type="number" min="1" class="form-control" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-sm btn-outline-danger w-100 remove-category">Remove</button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="BannerImage" class="form-label fw-bold">Event Banner (JPG, PNG or WebP)</label>
+                        <input asp-for="BannerImage" type="file" class="form-control" accept=".jpg,.jpeg,.png,.webp" />
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2">Publish Event</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var index = @Model.Categories.Count;
+        var rows = document.getElementById('categoryRows');
+        var addButton = document.getElementById('addCategory');
+
+        function markup(i) {
+            return '<div class="col-md-4"><label class="form-label small">Name</label>' +
+                '<input name="Categories[' + i + '].CategoryName" class="form-control" placeholder="10km Fun Run" /></div>' +
+                '<div class="col-md-2"><label class="form-label small">Distance (km)</label>' +
+                '<input name="Categories[' + i + '].DistanceKm" type="number" step="0.01" min="0.1" value="10" class="form-control" /></div>' +
+                '<div class="col-md-2"><label class="form-label small">Entry fee</label>' +
+                '<input name="Categories[' + i + '].EntryFee" type="number" step="0.01" min="0" value="0" class="form-control" /></div>' +
+                '<div class="col-md-2"><label class="form-label small">Max entries</label>' +
+                '<input name="Categories[' + i + '].MaxParticipants" type="number" min="1" value="100" class="form-control" /></div>' +
+                '<div class="col-md-2"><button type="button" class="btn btn-sm btn-outline-danger w-100 remove-category">Remove</button></div>';
+        }
+
+        addButton.addEventListener('click', function () {
+            var row = document.createElement('div');
+            row.className = 'row g-2 align-items-end mb-2 category-row';
+            row.innerHTML = markup(index++);
+            rows.appendChild(row);
+        });
+
+        rows.addEventListener('click', function (event) {
+            if (event.target.classList.contains('remove-category')) {
+                event.target.closest('.category-row').remove();
+            }
+        });
+    })();
+</script>

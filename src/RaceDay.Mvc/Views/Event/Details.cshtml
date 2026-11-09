@@ -1,0 +1,110 @@
+@model RaceDay.Mvc.Models.EventSummaryViewModel
+
+@{
+    ViewData["Title"] = Model?.EventName ?? "Event Details";
+    string userRole = Context.Session.GetString("Role") ?? Context.Session.GetString("UserRole") ?? "";
+}
+
+<div class="container my-4 text-light">
+    <div class="row">
+        <!-- Main Event Details -->
+        <div class="col-lg-8">
+            <div class="card bg-dark text-light border-secondary shadow mb-4">
+                @if (!string.IsNullOrEmpty(Model?.BannerImageUrlResolved))
+                {
+                    <img src="@Model!.BannerImageUrlResolved" class="card-img-top" alt="@Model.EventName" style="height: 320px; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1530549387789-4c1017266635?w=800'" />
+                }
+                else
+                {
+                    <img src="https://images.unsplash.com/photo-1530549387789-4c1017266635?w=800" class="card-img-top" alt="Marathon Default" style="height: 320px; object-fit: cover;" />
+                }
+                <div class="card-body p-4">
+                    <span class="badge bg-warning text-dark mb-2">Featured Race</span>
+                    <h1 class="text-warning fw-bold mb-3">@Model?.EventName</h1>
+                    
+                    <p class="lead text-light mb-4">@Model?.Description</p>
+
+                    <div class="row g-3 mb-4 text-muted">
+                        <div class="col-sm-6">
+                            <div class="p-3 bg-black rounded border border-secondary">
+                                <i class="bi bi-calendar-event text-warning me-2"></i><strong>Date:</strong> @Model?.EventDate.ToString("yyyy-MM-dd")
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="p-3 bg-black rounded border border-secondary">
+                                <i class="bi bi-clock text-warning me-2"></i><strong>Start Time:</strong> @Model?.StartTime
+                            </div>
+                        </div>
+                        <div class="col-sm-12">
+                            <div class="p-3 bg-black rounded border border-secondary">
+                                <i class="bi bi-geo-alt text-warning me-2"></i><strong>Venue & City:</strong> @Model?.VenueName, @Model?.City
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Categories & Enrolment Form -->
+                    <h4 class="text-warning mb-3"><i class="bi bi-signpost-split me-2"></i>Race Distances & Enrolment Categories</h4>
+                    
+                    @if (Model?.Categories != null && Model.Categories.Any())
+                    {
+                        <div class="list-group bg-dark mb-4">
+                            @foreach (var cat in Model.Categories)
+                            {
+                                <div class="list-group-item bg-black text-light border border-secondary rounded p-3 mb-2 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                                    <div>
+                                        <h5 class="text-warning mb-1">@cat.CategoryName</h5>
+                                        <p class="text-muted small mb-0"><i class="bi bi-info-circle me-1"></i> Category ID: @cat.CategoryID</p>
+                                    </div>
+
+                                    @if (!Model.IsRegistrationOpen)
+                                    {
+                                        <span class="badge bg-secondary">Registration closed</span>
+                                    }
+                                    else if (!string.IsNullOrEmpty(userRole) && userRole != "Organiser" && userRole != "Organizer")
+                                    {
+                                        <form asp-controller="Event" asp-action="Enrol" method="post" class="d-flex align-items-center gap-2">
+                                            <input type="hidden" name="eventId" value="@Model.EventID" />
+                                            <input type="hidden" name="categoryId" value="@cat.CategoryID" />
+                                            <button type="submit" class="btn btn-sm btn-warning fw-bold text-dark">Enrol Now</button>
+                                        </form>
+                                    }
+                                    else if (string.IsNullOrEmpty(userRole))
+                                    {
+                                        <a asp-controller="Account" asp-action="Login" class="btn btn-sm btn-outline-warning">Log in to Enrol</a>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="p-3 border border-secondary rounded bg-black mb-4">
+                            <p class="text-muted mb-0">No specific categories have been loaded for this event yet.</p>
+                        </div>
+                    }
+
+                    <a asp-action="Index" class="btn btn-outline-light"><i class="bi bi-arrow-left me-1"></i> Back to Events</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Venue Map Location -->
+        <div class="col-lg-4">
+            <div class="card bg-dark text-light border-secondary shadow mb-4">
+                <div class="card-header bg-black border-secondary">
+                    <h5 class="mb-0 text-warning"><i class="bi bi-map me-2"></i>Location Map</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div style="height: 300px; width: 100%;">
+                        <iframe width="100%" height="100%" style="border:0;" loading="lazy" allowfullscreen 
+                            src="https://maps.google.com/maps?q=@Uri.EscapeDataString(Model?.VenueName + ", " + Model?.City)&t=&z=13&ie=UTF8&iwloc=&output=embed">
+                        </iframe>
+                    </div>
+                    <div class="p-3">
+                        <p class="small text-muted mb-0"><i class="bi bi-info-circle me-1"></i> Interactive map showing the primary venue and surrounding race routes.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

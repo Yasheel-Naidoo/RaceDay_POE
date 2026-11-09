@@ -1,0 +1,111 @@
+@model RaceDay.Mvc.Models.EventSummaryViewModel
+@{
+    ViewData["Title"] = "Manage Race Categories";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="text-warning"><i class="bi bi-diagram-3-fill me-2"></i>Race Categories</h2>
+        <p class="text-light mb-0">@Model.EventName &mdash; @Model.EventDate.ToString("yyyy-MM-dd")</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="EditEvent" asp-route-id="@Model.EventID" class="btn btn-outline-warning btn-sm">Edit event</a>
+        <a asp-action="Dashboard" class="btn btn-outline-light btn-sm">Back to dashboard</a>
+    </div>
+</div>
+
+<div class="card bg-dark text-light border-secondary mb-4">
+    <div class="card-header bg-black border-secondary">
+        <h5 class="mb-0 text-warning">Add a category</h5>
+    </div>
+    <div class="card-body">
+        <form asp-action="AddCategory" method="post" data-busy class="row g-2 align-items-end">
+            <input type="hidden" name="eventId" value="@Model.EventID" />
+            <div class="col-md-4">
+                <label class="form-label small">Name</label>
+                <input name="CategoryName" class="form-control" placeholder="10km Fun Run" required />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Distance (km)</label>
+                <input name="DistanceKm" type="number" step="0.01" min="0.1" value="10" class="form-control" required />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Entry fee</label>
+                <input name="EntryFee" type="number" step="0.01" min="0" value="0" class="form-control" required />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Max entries</label>
+                <input name="MaxParticipants" type="number" min="1" value="100" class="form-control" required />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Add</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (!Model.Categories.Any())
+{
+    <div class="alert alert-dark border border-secondary text-light">
+        No categories yet. Add one so athletes can enter this event.
+    </div>
+}
+else
+{
+    <div class="table-responsive bg-white rounded shadow-sm p-3">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Name</th>
+                    <th>Distance (km)</th>
+                    <th>Entry fee</th>
+                    <th>Max entries</th>
+                    <th class="text-center">Entered</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var category in Model.Categories)
+                {
+                    <tr>
+                        <td colspan="5">
+                            <form asp-action="UpdateCategory" method="post" class="row g-2 align-items-center" data-busy>
+                                <input type="hidden" name="eventId" value="@Model.EventID" />
+                                <input type="hidden" name="categoryId" value="@category.CategoryID" />
+                                <div class="col-md-3">
+                                    <input name="CategoryName" value="@category.CategoryName" class="form-control" required />
+                                </div>
+                                <div class="col-md-2">
+                                    <input name="DistanceKm" value="@category.DistanceKm" type="number" step="0.01" min="0.1" class="form-control" required />
+                                </div>
+                                <div class="col-md-2">
+                                    <input name="EntryFee" value="@category.EntryFee" type="number" step="0.01" min="0" class="form-control" required />
+                                </div>
+                                <div class="col-md-2">
+                                    <input name="MaxParticipants" value="@category.MaxParticipants" type="number" min="1" class="form-control" required />
+                                </div>
+                                <div class="col-md-1 text-center">@category.EnrolledCount</div>
+                                <div class="col-md-2">
+                                    <button type="submit" class="btn btn-sm btn-primary w-100">Save</button>
+                                </div>
+                            </form>
+                        </td>
+                        <td class="text-end">
+                            <form asp-action="DeleteCategory" method="post" data-busy
+                                  data-confirm="Delete @category.CategoryName? This cannot be undone.">
+                                <input type="hidden" name="eventId" value="@Model.EventID" />
+                                <input type="hidden" name="categoryId" value="@category.CategoryID" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger" disabled="@(category.EnrolledCount > 0)"
+                                        title="@(category.EnrolledCount > 0 ? "Categories with enrolments cannot be deleted" : "Delete category")">
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <p class="text-muted small mt-2">Categories that already have enrolments cannot be deleted.</p>
+}

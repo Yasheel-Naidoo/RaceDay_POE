@@ -1,12 +1,11 @@
 namespace RaceDay.Api.DTOs
 {
-    // Authentication DTOs
     public record RegisterRequestDto(
         string FullName,
         string Email,
         string Password,
         string Role,
-        string? Phone,
+        string Phone,
         string? OrganisationName,
         DateTime? DateOfBirth
     );
@@ -16,135 +15,121 @@ namespace RaceDay.Api.DTOs
         string Password
     );
 
-    public record AuthResponseDto(
-        int UserId,
-        string FullName,
-        string Email,
-        string Role,
-        string Message
-    );
-
-    // User Profile DTOs
-    public record UserProfileDto(
-        int Id,
-        string FullName,
-        string Email,
-        string Role,
-        string? Phone,
-        string? OrganisationName,
-        DateTime? DateOfBirth,
-        string? EmergencyContactName,
-        string? EmergencyContactPhone
-    );
-
-    public record UpdateProfileDto(
-        string? FullName,
-        string? Phone,
-        string? EmergencyContactName,
-        string? EmergencyContactPhone
-    );
-
-    // Event Request DTOs
     public record CreateEventDto(
         string EventName,
         DateTime EventDate,
-        TimeSpan? StartTime,
+        TimeSpan StartTime,
         int VenueId,
         string? Description
     );
 
     public record UpdateEventDto(
-        string? EventName,
-        DateTime? EventDate,
-        TimeSpan? StartTime,
-        string? Description,
-        string? Status
-    );
-
-    // Venue & Category Response DTOs
-    public record VenueResponseDto(
-        int VenueId,
-        string VenueName,
-        string? Address,
-        string City,
-        string Province,
-        string? PostalCode,
-        string? RouteDescription
-    );
-
-    public record CategoryResponseDto(
-        int CategoryId,
-        string CategoryName,
-        decimal? DistanceKm,
-        decimal EntryFee,
-        int MaxParticipants
-    );
-
-    public record EventResponseDto(
-        int EventId,
         string EventName,
         DateTime EventDate,
-        TimeSpan? StartTime,
+        TimeSpan StartTime,
+        int VenueId,
         string? Description,
-        string Status,
-        int OrganiserId,
-        DateTime CreatedAt,
-        VenueResponseDto? Venue,
-        List<CategoryResponseDto> Categories
+        string Status
     );
 
-    // Category Request DTOs
     public record CreateCategoryDto(
         string CategoryName,
-        decimal? DistanceKm,
+        decimal DistanceKm,
         decimal EntryFee,
         int MaxParticipants
     );
 
     public record UpdateCategoryDto(
-        string? CategoryName,
-        decimal? DistanceKm,
-        decimal? EntryFee,
-        int? MaxParticipants
+        string CategoryName,
+        decimal DistanceKm,
+        decimal EntryFee,
+        int MaxParticipants
     );
 
-    // Enrolment DTOs
     public record EnrolRequestDto(
         int CategoryId
     );
 
-    // Result Request & Response DTOs
-    public record CaptureResultDto(
+    public record ResultSubmissionDto(
         int EnrolmentId,
         TimeSpan FinishTime,
         int Position,
         string Status
     );
 
-    public record UpdateResultDto(
-        TimeSpan? FinishTime,
-        int? Position,
-        string? Status
+    public record UpdateProfileDto(
+        string FullName,
+        string Phone,
+        DateTime? DateOfBirth,
+        string? EmergencyContactName,
+        string? EmergencyContactPhone
+    );
+
+    // Response DTOs
+    public record EventResponseDto(
+        int EventID,
+        string EventName,
+        DateTime EventDate,
+        TimeSpan StartTime,
+        string Status,
+        string? Description,
+        string? BannerImageUrl,
+        int OrganiserId,
+        string OrganiserName,
+        int VenueId,
+        string VenueName,
+        string City,
+        string Province,
+        List<CategoryResponseDto> Categories
+    );
+
+    public record CategoryResponseDto(
+        int CategoryID,
+        int EventID,
+        string CategoryName,
+        decimal DistanceKm,
+        decimal EntryFee,
+        int MaxParticipants,
+        int EnrolledCount
+    );
+
+    public record EnrolmentResponseDto(
+        int EnrolmentID,
+        int ParticipantID,
+        string ParticipantName,
+        int CategoryID,
+        string CategoryName,
+        decimal DistanceKm,
+        int EventID,
+        string EventName,
+        DateTime EventDate,
+        string BibNumber,
+        string Status,
+        DateTime EnrolmentDate
     );
 
     public record ResultResponseDto(
-        int ResultId,
-        int EnrolmentId,
-        TimeSpan? FinishTime,
-        int? Position,
-        string Status,
-        DateTime CreatedAt
-    );
-
-    public record MyResultResponseDto(
-        int ResultId,
-        int EnrolmentId,
+        int ResultID,
+        int EnrolmentID,
+        string ParticipantName,
+        string BibNumber,
         string EventName,
         string CategoryName,
-        string BibNumber,
-        TimeSpan? FinishTime,
-        int? Position,
-        string Status,
-        DateTime CreatedAt
+        TimeSpan FinishTime,
+        int Position,
+        string Status
+    );
+
+    // Fully aligned with UsersController.cs argument types and order
+    public record UserProfileDto(
+        int ParticipantID,
+        string FullName,
+        string Email,
+        string Phone,
+        string? EmergencyContactName,
+        string? EmergencyContactPhone,
+        DateTime? DateOfBirth,
+        string? ProfilePictureUrl,
+        object CreatedAt
     );
 }

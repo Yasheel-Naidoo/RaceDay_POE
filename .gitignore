@@ -7,3 +7,15 @@ obj/
 *.userosscache
 *.sln.docstates
 .DS_Store
+
+## Runtime uploads (banners/avatars are recreated by the app)
+src/RaceDay.Api/wwwroot/uploads/
+src/RaceDay.Mvc/wwwroot/uploads/
+
+## Local run logs and temporary files
+.tmp-run/
+*.zip
+
+## OS junk
+desktop.ini
+Thumbs.db

@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: raceday-sql
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=Password123!
+    ports:
+      - "1433:1433"
+    networks:
+      - raceday-net
+
+  api:
+    build:
+      context: .
+      dockerfile: src/RaceDay.Api/Dockerfile
+    container_name: raceday-api
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=RaceDayDb;User Id=sa;Password=Password123!;TrustServerCertificate=True;
+      - AzureBlobStorage__ConnectionString=${AZURE_STORAGE_CONNECTION_STRING:-UseDevelopmentStorage=true}
+      - AzureBlobStorage__ContainerName=raceday-assets
+    ports:
+      - "5000:8080"
+    depends_on:
+      - sqlserver
+    networks:
+      - raceday-net
+
+  mvc:
+    build:
+      context: .
+      dockerfile: src/RaceDay.Mvc/Dockerfile
+    container_name: raceday-mvc
+    environment:
+      - ApiSettings__BaseUrl=http://api:8080/
+    ports:
+      - "5050:8080"
+    depends_on:
+      - api
+    networks:
+      - raceday-net
+
+networks:
+  raceday-net:
+    driver: bridge

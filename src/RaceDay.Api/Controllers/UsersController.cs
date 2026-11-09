@@ -1,67 +1,44 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using RaceDay.Api.Data;
 using RaceDay.Api.DTOs;
-using RaceDay.Api.Filters;
+using RaceDay.Api.Services;
 
 namespace RaceDay.Api.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    [RequireAuth]
+    [Route("api")]
     public class UsersController : ControllerBase
     {
         private readonly RaceDayDbContext _context;
-        public UsersController(RaceDayDbContext context) => _context = context;
 
-        /// <summary>
-        /// Returns the logged-in user's profile details.
-        /// </summary>
-        [HttpGet("profile")]
-        public async Task<IActionResult> GetProfile()
+        public UsersController(RaceDayDbContext context)
         {
-            var userId = HttpContext.Session.GetInt32("UserId")!.Value;
-            var role = HttpContext.Session.GetString("Role")!;
-
-            if (role == "Organiser")
-            {
-                var o = await _context.Organisers.FindAsync(userId);
-                if (o == null) return NotFound();
-                return Ok(new UserProfileDto(o.OrganiserID, o.FullName, o.Email, role, o.Phone, o.OrganisationName, null, null, null));
-            }
-
-            var p = await _context.Participants.FindAsync(userId);
-            if (p == null) return NotFound();
-            return Ok(new UserProfileDto(p.ParticipantID, p.FullName, p.Email, role, p.Phone, null, p.DateOfBirth, p.EmergencyContactName, p.EmergencyContactPhone));
+            _context = context;
         }
 
-        /// <summary>
-        /// Updates the logged-in user's profile details.
-        /// </summary>
-        [HttpPut("profile")]
-        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDto dto)
+        // ... your controller methods (GetProfile, UpdateProfile, etc.) ...
+
+        [HttpPut("users/{id:int}/profile")]
+        public async Task<IActionResult> UpdateProfile(int id, [FromForm] UpdateProfileDto dto, IFormFile? profilePicture)
         {
-            var userId = HttpContext.Session.GetInt32("UserId")!.Value;
-            var role = HttpContext.Session.GetString("Role")!;
+            var user = await _context.Participants.FindAsync(id);
+            if (user == null) return NotFound(new { message = "User not found." });
 
-            if (role == "Organiser")
+            user.FullName = dto.FullName;
+            user.Phone = dto.Phone;
+            user.DateOfBirth = dto.DateOfBirth;
+            user.EmergencyContactName = dto.EmergencyContactName;
+            user.EmergencyContactPhone = dto.EmergencyContactPhone;
+
+            if (profilePicture != null)
             {
-                var o = await _context.Organisers.FindAsync(userId);
-                if (o == null) return NotFound();
-                if (dto.FullName != null) o.FullName = dto.FullName;
-                if (dto.Phone != null) o.Phone = dto.Phone;
-                await _context.SaveChangesAsync();
-                return Ok(o);
+                var fileService = HttpContext.RequestServices.GetRequiredService<ILocalFileService>();
+                user.ProfilePictureUrl = await fileService.SaveFileAsync(profilePicture, "profiles");
             }
-
-            var p = await _context.Participants.FindAsync(userId);
-            if (p == null) return NotFound();
-            if (dto.FullName != null) p.FullName = dto.FullName;
-            if (dto.Phone != null) p.Phone = dto.Phone;
-            if (dto.EmergencyContactName != null) p.EmergencyContactName = dto.EmergencyContactName;
-            if (dto.EmergencyContactPhone != null) p.EmergencyContactPhone = dto.EmergencyContactPhone;
 
             await _context.SaveChangesAsync();
-            return Ok(p);
+            return Ok(new { message = "Profile updated successfully.", profilePictureUrl = user.ProfilePictureUrl });
         }
-    }
-}
+    } // Closes UsersController class
+} // Closes RaceDay.Api.Controllers namespace

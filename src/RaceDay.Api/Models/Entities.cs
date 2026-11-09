@@ -8,20 +8,20 @@ namespace RaceDay.Api.Models
         [Key]
         public int OrganiserID { get; set; }
 
-        [Required, MaxLength(150)]
-        public string OrganisationName { get; set; } = string.Empty;
-
         [Required, MaxLength(100)]
         public string FullName { get; set; } = string.Empty;
 
-        [Required, MaxLength(150)]
+        [Required, EmailAddress, MaxLength(150)]
         public string Email { get; set; } = string.Empty;
 
-        [MaxLength(20)]
-        public string? Phone { get; set; }
-
-        [Required, MaxLength(255)]
+        [Required]
         public string PasswordHash { get; set; } = string.Empty;
+
+        [Required, Phone, MaxLength(20)]
+        public string Phone { get; set; } = string.Empty;
+
+        [MaxLength(150)]
+        public string OrganisationName { get; set; } = string.Empty;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
@@ -36,11 +36,14 @@ namespace RaceDay.Api.Models
         [Required, MaxLength(100)]
         public string FullName { get; set; } = string.Empty;
 
-        [Required, MaxLength(150)]
+        [Required, EmailAddress, MaxLength(150)]
         public string Email { get; set; } = string.Empty;
 
-        [MaxLength(20)]
-        public string? Phone { get; set; }
+        [Required]
+        public string PasswordHash { get; set; } = string.Empty;
+
+        [Required, Phone, MaxLength(20)]
+        public string Phone { get; set; } = string.Empty;
 
         public DateTime? DateOfBirth { get; set; }
 
@@ -50,8 +53,8 @@ namespace RaceDay.Api.Models
         [MaxLength(20)]
         public string? EmergencyContactPhone { get; set; }
 
-        [Required, MaxLength(255)]
-        public string PasswordHash { get; set; } = string.Empty;
+        [MaxLength(500)]
+        public string? ProfilePictureUrl { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
@@ -66,18 +69,19 @@ namespace RaceDay.Api.Models
         [Required, MaxLength(150)]
         public string VenueName { get; set; } = string.Empty;
 
-        [MaxLength(200)]
-        public string? Address { get; set; }
+        [Required, MaxLength(255)]
+        public string Address { get; set; } = string.Empty;
 
         [Required, MaxLength(100)]
         public string City { get; set; } = string.Empty;
 
-        [Required, MaxLength(50)]
+        [Required, MaxLength(100)]
         public string Province { get; set; } = string.Empty;
 
-        [MaxLength(10)]
-        public string? PostalCode { get; set; }
+        [Required, MaxLength(20)]
+        public string PostalCode { get; set; } = string.Empty;
 
+        [MaxLength(500)]
         public string? RouteDescription { get; set; }
 
         public ICollection<Event> Events { get; set; } = new List<Event>();
@@ -91,20 +95,30 @@ namespace RaceDay.Api.Models
         [Required, MaxLength(150)]
         public string EventName { get; set; } = string.Empty;
 
+        [Required]
         public DateTime EventDate { get; set; }
 
-        public TimeSpan? StartTime { get; set; }
+        [Required]
+        public TimeSpan StartTime { get; set; }
 
-        public string? Description { get; set; }
-
-        [Required, MaxLength(20)]
+        [Required, MaxLength(50)]
         public string Status { get; set; } = "Open";
 
-        public int OrganiserID { get; set; }
-        public Organiser? Organiser { get; set; }
+        [MaxLength(1000)]
+        public string? Description { get; set; }
 
+        [MaxLength(500)]
+        public string? BannerImageUrl { get; set; }
+
+        [Required]
+        public int OrganiserID { get; set; }
+        [ForeignKey(nameof(OrganiserID))]
+        public Organiser Organiser { get; set; } = null!;
+
+        [Required]
         public int VenueID { get; set; }
-        public Venue? Venue { get; set; }
+        [ForeignKey(nameof(VenueID))]
+        public Venue Venue { get; set; } = null!;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
@@ -116,17 +130,19 @@ namespace RaceDay.Api.Models
         [Key]
         public int CategoryID { get; set; }
 
+        [Required]
         public int EventID { get; set; }
-        public Event? Event { get; set; }
+        [ForeignKey(nameof(EventID))]
+        public Event Event { get; set; } = null!;
 
-        [Required, MaxLength(50)]
+        [Required, MaxLength(100)]
         public string CategoryName { get; set; } = string.Empty;
 
-        [Column(TypeName = "decimal(5,1)")]
-        public decimal? DistanceKm { get; set; }
+        [Column(TypeName = "decimal(6,2)")]
+        public decimal DistanceKm { get; set; }
 
         [Column(TypeName = "decimal(10,2)")]
-        public decimal EntryFee { get; set; } = 0;
+        public decimal EntryFee { get; set; }
 
         public int MaxParticipants { get; set; }
 
@@ -138,18 +154,22 @@ namespace RaceDay.Api.Models
         [Key]
         public int EnrolmentID { get; set; }
 
+        [Required]
         public int ParticipantID { get; set; }
-        public Participant? Participant { get; set; }
+        [ForeignKey(nameof(ParticipantID))]
+        public Participant Participant { get; set; } = null!;
 
+        [Required]
         public int CategoryID { get; set; }
-        public Category? Category { get; set; }
+        [ForeignKey(nameof(CategoryID))]
+        public Category Category { get; set; } = null!;
+
+        [Required, MaxLength(50)]
+        public string BibNumber { get; set; } = string.Empty;
 
         public DateTime EnrolmentDate { get; set; } = DateTime.UtcNow;
 
-        [Required, MaxLength(20)]
-        public string BibNumber { get; set; } = string.Empty;
-
-        [Required, MaxLength(20)]
+        [Required, MaxLength(50)]
         public string Status { get; set; } = "Confirmed";
 
         public Result? Result { get; set; }
@@ -160,14 +180,17 @@ namespace RaceDay.Api.Models
         [Key]
         public int ResultID { get; set; }
 
+        [Required]
         public int EnrolmentID { get; set; }
-        public Enrolment? Enrolment { get; set; }
+        [ForeignKey(nameof(EnrolmentID))]
+        public Enrolment Enrolment { get; set; } = null!;
 
-        public TimeSpan? FinishTime { get; set; }
+        [Required]
+        public TimeSpan FinishTime { get; set; }
 
-        public int? Position { get; set; }
+        public int Position { get; set; }
 
-        [Required, MaxLength(20)]
+        [Required, MaxLength(50)]
         public string Status { get; set; } = "Completed";
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

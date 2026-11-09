@@ -19,23 +19,23 @@ namespace RaceDay.Api.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<Organiser>().HasIndex(o => o.Email).IsUnique();
-            modelBuilder.Entity<Participant>().HasIndex(p => p.Email).IsUnique();
+            modelBuilder.Entity<Organiser>()
+                .HasIndex(o => o.Email)
+                .IsUnique();
 
-            modelBuilder.Entity<Enrolment>().HasIndex(e => e.BibNumber).IsUnique();
-            modelBuilder.Entity<Enrolment>().HasIndex(e => new { e.ParticipantID, e.CategoryID }).IsUnique();
+            modelBuilder.Entity<Participant>()
+                .HasIndex(p => p.Email)
+                .IsUnique();
 
-            modelBuilder.Entity<Category>().HasIndex(c => new { c.EventID, c.CategoryName }).IsUnique();
+            // Composite uniqueness: An athlete can enrol in a specific category only once
+            modelBuilder.Entity<Enrolment>()
+                .HasIndex(e => new { e.ParticipantID, e.CategoryID })
+                .IsUnique();
 
+            // Enforce 1:1 between Enrolment and Result
             modelBuilder.Entity<Result>()
                 .HasIndex(r => r.EnrolmentID)
                 .IsUnique();
-
-            modelBuilder.Entity<Result>()
-                .HasOne(r => r.Enrolment)
-                .WithOne(e => e.Result)
-                .HasForeignKey<Result>(r => r.EnrolmentID)
-                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

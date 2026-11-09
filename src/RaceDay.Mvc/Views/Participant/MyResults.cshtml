@@ -1,0 +1,44 @@
+@model List<RaceDay.Mvc.Models.ParticipantResultViewModel>
+    @{
+    ViewData["Title"] = "My Official Results";
+    }
+
+    <h2 class="mb-4"><i class="bi bi-trophy-fill text-warning me-2"></i>Race Finish Ledger</h2>
+
+    @if (!Model.Any())
+{
+    <div class="card p-5 text-center text-muted">
+        <h5>No official race finishes recorded yet.</h5>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var r in Model)
+        {
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm border-start border-5 border-success p-3 bg-white">
+                <div class="d-flex justify-content-between">
+                    <h5 class="text-primary mb-1">@r.EventName</h5>
+                    <span class="badge bg-success">@r.Status</span>
+                </div>
+                <div class="text-muted small mb-3">@r.CategoryName</div>
+                <div class="row text-center g-2">
+                    <div class="col-4 bg-light p-2 rounded">
+                        <small class="text-muted d-block">Bib</small>
+                        <span class="fw-bold">@r.BibNumber</span>
+                    </div>
+                    <div class="col-4 bg-light p-2 rounded">
+                        <small class="text-muted d-block">Time</small>
+                        <span class="fw-bold font-monospace">@r.FinishTime.ToString(@"hh\:mm\:ss")</span>
+                    </div>
+                    <div class="col-4 bg-light p-2 rounded">
+                        <small class="text-muted d-block">Rank</small>
+                        <span class="fw-bold text-success">#@r.Position</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        }
+    </div>
+}

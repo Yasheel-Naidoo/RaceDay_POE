@@ -1,0 +1,51 @@
+@model IEnumerable<RaceDay.Mvc.Models.EventSummaryViewModel>
+
+    @{
+    ViewData["Title"] = "Event Catalogue";
+    }
+
+    <div class="container my-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-grid-3x3-gap-fill text-warning me-2"></i>Event Catalogue</h2>
+            <form asp-action="Catalogue" method="get" class="d-flex gap-2">
+                <input type="text" name="search" class="form-control" placeholder="Search events..." value="@ViewData["SearchQuery"]" />
+                <button type="submit" class="btn btn-outline-warning"><i class="bi bi-search"></i></button>
+            </form>
+        </div>
+
+        @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-dark text-center py-5">
+            <i class="bi bi-calendar-x display-4 text-muted mb-3 d-block"></i>
+            <h4>No events found in the catalogue.</h4>
+            <p class="text-muted">Check back later or try a different search term.</p>
+        </div>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            @foreach (var ev in Model)
+            {
+            <div class="col">
+                <div class="card h-100 bg-dark text-light border-secondary shadow-sm">
+                    @if (!string.IsNullOrEmpty(ev.BannerImageUrlResolved))
+                        {
+                    <img src="@ev.BannerImageUrlResolved" class="card-img-top" alt="@ev.EventName" style="height: 180px; object-fit: cover;" onerror="this.style.display='none'" />
+                        }
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title text-warning">@ev.EventName</h5>
+                        <p class="card-text text-muted small mb-2">
+                            <i class="bi bi-calendar-event me-1"></i> @ev.EventDate.ToString("yyyy-MM-dd") at @ev.StartTime<br />
+                            <i class="bi bi-geo-alt me-1"></i> @ev.VenueName, @ev.City
+                        </p>
+                        <p class="card-text flex-grow-1">@(ev.Description?.Length > 100 ? ev.Description.Substring(0, 100) + "..." : ev.Description)</p>
+                        <a asp-action="Details" asp-route-id="@ev.EventID" class="btn btn-outline-warning mt-auto">
+                            <i class="bi bi-info-circle me-1"></i> View Details & Categories
+                        </a>
+                    </div>
+                </div>
+            </div>
+            }
+        </div>
+    }
+    </div>

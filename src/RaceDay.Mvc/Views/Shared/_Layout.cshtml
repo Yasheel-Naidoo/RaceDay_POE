@@ -1,0 +1,159 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - RaceDay</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <!-- Bootstrap Icons CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark border-bottom border-secondary box-shadow mb-3">
+            <div class="container-fluid">
+                <!-- Website Logo & Brand -->
+                <a class="navbar-brand d-flex align-items-center gap-2" asp-controller="Home" asp-action="Index">
+                    <img src="~/images/logo.png" alt="RaceDay Logo" width="32" height="32" class="d-inline-block align-text-top rounded-circle bg-primary p-1" onerror="this.style.display='none'">
+                    <span class="fw-bold text-warning">RaceDay</span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link text-light" asp-controller="Home" asp-action="Index">
+                                <i class="bi bi-house-door-fill me-1"></i> Home
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-light" asp-controller="Event" asp-action="Index">
+                                <i class="bi bi-calendar-event-fill me-1"></i> Events
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-light" asp-controller="Event" asp-action="Catalogue">
+                                <i class="bi bi-grid-3x3-gap-fill me-1"></i> Catalogue
+                            </a>
+                        </li>
+                        @if (!string.IsNullOrEmpty(Context.Session.GetString("Role")) || !string.IsNullOrEmpty(Context.Session.GetString("UserRole")))
+                        {
+                        <li class="nav-item">
+                            <a class="nav-link text-warning fw-semibold" asp-controller="Account" asp-action="Dashboard">
+                                <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                            </a>
+                        </li>
+                        }
+                    </ul>
+                    <ul class="navbar-nav align-items-center">
+                        @if (!string.IsNullOrEmpty(Context.Session.GetString("UserEmail")) || !string.IsNullOrEmpty(Context.Session.GetString("Role")))
+                        {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle text-light d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-person-circle me-1 text-warning fs-5"></i>
+                                <span>@(Context.Session.GetString("UserFullName") ?? "User")</span>
+                                <span class="badge bg-secondary ms-2">@(Context.Session.GetString("Role") ?? Context.Session.GetString("UserRole"))</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end bg-dark border-secondary">
+                                <li>
+                                    <a class="dropdown-item text-light" asp-controller="Account" asp-action="Profile">
+                                        <i class="bi bi-person me-2 text-warning"></i> Profile
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider border-secondary"></li>
+                                <li>
+                                    <form asp-controller="Account" asp-action="Logout" method="post" class="px-3 py-1">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger w-100 text-start text-light fw-bold d-flex align-items-center gap-2">
+                                            <i class="bi bi-box-arrow-right text-danger fs-5"></i> Logout
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                        }
+                        else
+                        {
+                        <li class="nav-item">
+                            <a class="nav-link text-light" asp-controller="Account" asp-action="Login">
+                                <i class="bi bi-box-arrow-in-right me-1"></i> Login
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-light" asp-controller="Account" asp-action="Register">
+                                <i class="bi bi-person-plus-fill me-1"></i> Register
+                            </a>
+                        </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <main role="main" class="pb-3">
+            @if (TempData["SuccessMessage"] is string successMessage)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>@successMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @if (TempData["ErrorMessage"] is string errorMessage)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>@errorMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted bg-dark text-center py-3 mt-auto border-secondary">
+        <div class="container text-light">
+            &copy; 2026 - RaceDay - Local Edition
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        // Confirm destructive forms and block double submissions while one is in flight.
+        document.addEventListener('submit', function (event) {
+            var form = event.target;
+            if (!form || !form.matches) return;
+
+            if (form.matches('form[data-confirm]') && form.dataset.confirmed !== 'true') {
+                if (!window.confirm(form.dataset.confirm)) {
+                    event.preventDefault();
+                    return;
+                }
+                form.dataset.confirmed = 'true';
+            }
+
+            if (!form.matches('form[data-busy]')) return;
+
+            var button = form.querySelector('button[type="submit"]');
+            if (!button || button.disabled) return;
+
+            button.dataset.originalText = button.innerHTML;
+            setTimeout(function () {
+                button.disabled = true;
+                button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Working...';
+            }, 0);
+
+            // Re-enable if the browser restores the page (back button, failed navigation).
+            window.setTimeout(function () {
+                button.disabled = false;
+                if (button.dataset.originalText) button.innerHTML = button.dataset.originalText;
+            }, 10000);
+        });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

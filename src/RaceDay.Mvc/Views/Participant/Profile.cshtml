@@ -1,0 +1,87 @@
+@model RaceDay.Mvc.Models.UserProfileViewModel
+
+@{
+    ViewData["Title"] = "Participant Profile";
+}
+
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card bg-dark text-light border-secondary shadow">
+                <div class="card-header bg-black border-secondary d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0 text-warning"><i class="bi bi-person-circle me-2"></i>My Participant Profile</h4>
+                    <a asp-action="Dashboard" class="btn btn-sm btn-outline-light"><i class="bi bi-arrow-left me-1"></i> Back to Dashboard</a>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Profile" method="post" enctype="multipart/form-data">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="row align-items-center mb-4">
+                            <!-- Avatar Preview & Upload -->
+                            <div class="col-md-4 text-center border-end border-secondary">
+                                @if (!string.IsNullOrEmpty(Model?.ProfilePictureUrl))
+                                {
+                                <img src="http://localhost:5000@(Model.ProfilePictureUrl)"
+                                     class="rounded-circle img-thumbnail bg-dark border-warning mb-3"
+                                     style="width: 140px; height: 140px; object-fit: cover;"
+                                     alt="Profile Picture"
+                                     onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200';" />
+                                }
+                                else
+                                {
+                                <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto mb-3 border border-warning" style="width: 140px; height: 140px; font-size: 3rem;">
+                                    <i class="bi bi-person"></i>
+                                </div>
+                                }
+                                <h5 class="text-warning mb-1">@Model?.FullName</h5>
+                                <p class="text-muted small mb-3">@Model?.Email</p>
+
+                                <div class="text-start px-2">
+                                    <label class="form-label fw-bold small text-light">Update Avatar Picture</label>
+                                    <input type="file" name="profilePicture" class="form-control form-control-sm bg-dark text-light border-secondary" accept=".jpg,.jpeg,.png,.webp" />
+                                    <small class="text-muted" style="font-size: 0.75rem;">Stored locally via API upload.</small>
+                                </div>
+                            </div>
+
+                            <!-- Editable Profile Form Fields -->
+                            <div class="col-md-8 ps-md-4">
+                                <div class="mb-3">
+                                    <label asp-for="FullName" class="form-label text-light">Full Name</label>
+                                    <input asp-for="FullName" class="form-control bg-dark text-light border-secondary" />
+                                    <span asp-validation-for="FullName" class="text-danger"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label asp-for="Phone" class="form-label text-light">Phone Number</label>
+                                    <input asp-for="Phone" class="form-control bg-dark text-light border-secondary" />
+                                    <span asp-validation-for="Phone" class="text-danger"></span>
+                                </div>
+
+                                <h6 class="border-bottom border-secondary pb-2 mt-4 mb-3 text-warning">Emergency Contacts</h6>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="EmergencyContactName" class="form-label text-light">Contact Name</label>
+                                        <input asp-for="EmergencyContactName" class="form-control bg-dark text-light border-secondary" />
+                                        <span asp-validation-for="EmergencyContactName" class="text-danger"></span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="EmergencyContactPhone" class="form-label text-light">Contact Phone</label>
+                                        <input asp-for="EmergencyContactPhone" class="form-control bg-dark text-light border-secondary" />
+                                        <span asp-validation-for="EmergencyContactPhone" class="text-danger"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-end border-top border-secondary pt-3">
+                            <button type="submit" class="btn btn-warning fw-bold text-dark px-4">
+                                <i class="bi bi-save me-1"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -2,196 +2,148 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RaceDay.Api.Data;
 using RaceDay.Api.DTOs;
-using RaceDay.Api.Filters;
 using RaceDay.Api.Models;
 
 namespace RaceDay.Api.Controllers
 {
     [ApiController]
+    [Route("api")]
     public class CategoriesController : ControllerBase
     {
         private readonly RaceDayDbContext _context;
-        public CategoriesController(RaceDayDbContext context) => _context = context;
 
-        /// <summary>
-        /// Lists all entry categories for a given event.
-        /// </summary>
-        /// <response code="200">List of categories returned successfully.</response>
-        /// <response code="404">Event not found.</response>
-        [HttpGet("api/events/{id}/categories")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetCategories(int id)
+        public CategoriesController(RaceDayDbContext context)
         {
-            var exists = await _context.Events.AnyAsync(e => e.EventID == id);
-            if (!exists)
-            {
-                return NotFound(new { message = "Event not found." });
-            }
+            _context = context;
+        }
+
+        [HttpGet("events/{eventId:int}/categories")]
+        public async Task<IActionResult> GetCategoriesForEvent(int eventId)
+        {
+            var eventExists = await _context.Events.AnyAsync(e => e.EventID == eventId);
+            if (!eventExists) return NotFound(new { message = "Event not found." });
 
             var categories = await _context.Categories
-                .Where(c => c.EventID == id)
+                .Where(c => c.EventID == eventId)
                 .Select(c => new CategoryResponseDto(
                     c.CategoryID,
+                    c.EventID,
                     c.CategoryName,
                     c.DistanceKm,
                     c.EntryFee,
-                    c.MaxParticipants
+                    c.MaxParticipants,
+                    c.Enrolments.Count(en => en.Status != "Withdrawn")
                 ))
                 .ToListAsync();
 
             return Ok(categories);
         }
 
-        /// <summary>
-        /// Adds a new category option to an event owned by the organiser.
-        /// </summary>
-        /// <response code="201">Category created successfully.</response>
-        /// <response code="400">Invalid category details.</response>
-        /// <response code="401">Unauthorized session.</response>
-        /// <response code="403">Logged-in organiser does not own this event.</response>
-        /// <response code="404">Event not found.</response>
-        /// <response code="409">Category name already exists in this event.</response>
-        [HttpPost("api/events/{id}/categories")]
-        [RequireRole("Organiser")]
-        [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status409Conflict)]
-        public async Task<IActionResult> AddCategory(int id, [FromBody] CreateCategoryDto dto)
+        [HttpPost("events/{eventId:int}/categories")]
+        public async Task<IActionResult> CreateCategory(int eventId, [FromBody] CreateCategoryDto dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.CategoryName) || dto.MaxParticipants <= 0 || dto.EntryFee < 0)
-            {
-                return BadRequest(new { message = "Invalid category parameters. Fee must be positive, capacity > 0, and name provided." });
-            }
+            var role = HttpContext.Session.GetString("Role");
+            var userId = HttpContext.Session.GetInt32("UserId");
 
-            var organiserId = HttpContext.Session.GetInt32("UserId")!.Value;
-            var ev = await _context.Events.FindAsync(id);
-            if (ev == null)
-            {
-                return NotFound(new { message = "Event not found." });
-            }
+            var ev = await _context.Events.FindAsync(eventId);
+            if (ev == null) return NotFound(new { message = "Event not found." });
 
-            if (ev.OrganiserID != organiserId)
-            {
-                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Forbidden. You do not own this event." });
-            }
+            if (role != "Organiser" || ev.OrganiserID != userId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Forbidden. Only the event owner can add categories." });
 
-            var dup = await _context.Categories.AnyAsync(c => c.EventID == id && c.CategoryName == dto.CategoryName);
-            if (dup)
-            {
-                return Conflict(new { message = "Category name already exists in this event." });
-            }
+            var categoryName = dto.CategoryName?.Trim() ?? string.Empty;
+            if (categoryName.Length == 0)
+                return BadRequest(new { message = "A category name is required." });
 
-            var cat = new Category
+            var nameTaken = await _context.Categories
+                .AnyAsync(c => c.EventID == eventId && c.CategoryName.ToLower() == categoryName.ToLower());
+
+            if (nameTaken)
+                return Conflict(new { message = $"A category named '{categoryName}' already exists for this event." });
+
+            var category = new Category
             {
-                EventID = id,
-                CategoryName = dto.CategoryName,
+                EventID = eventId,
+                CategoryName = categoryName,
                 DistanceKm = dto.DistanceKm,
                 EntryFee = dto.EntryFee,
                 MaxParticipants = dto.MaxParticipants
             };
 
-            _context.Categories.Add(cat);
+            _context.Categories.Add(category);
             await _context.SaveChangesAsync();
 
             var responseDto = new CategoryResponseDto(
-                cat.CategoryID,
-                cat.CategoryName,
-                cat.DistanceKm,
-                cat.EntryFee,
-                cat.MaxParticipants
+                category.CategoryID,
+                category.EventID,
+                category.CategoryName,
+                category.DistanceKm,
+                category.EntryFee,
+                category.MaxParticipants,
+                0
             );
 
-            return Created($"api/categories/{cat.CategoryID}", responseDto);
+            return StatusCode(StatusCodes.Status201Created, responseDto);
         }
 
-        /// <summary>
-        /// Updates a category fee, distance, or maximum capacity.
-        /// </summary>
-        /// <response code="200">Category updated successfully.</response>
-        /// <response code="401">Unauthorized session.</response>
-        /// <response code="403">Logged-in organiser does not own the parent event.</response>
-        /// <response code="404">Category not found.</response>
-        [HttpPut("api/categories/{id}")]
-        [RequireRole("Organiser")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HttpPut("categories/{id:int}")]
         public async Task<IActionResult> UpdateCategory(int id, [FromBody] UpdateCategoryDto dto)
         {
-            var cat = await _context.Categories.Include(c => c.Event).FirstOrDefaultAsync(c => c.CategoryID == id);
-            if (cat == null)
-            {
-                return NotFound(new { message = "Category not found." });
-            }
+            var role = HttpContext.Session.GetString("Role");
+            var userId = HttpContext.Session.GetInt32("UserId");
 
-            var organiserId = HttpContext.Session.GetInt32("UserId")!.Value;
-            if (cat.Event?.OrganiserID != organiserId)
-            {
-                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Forbidden. You do not own the parent event of this category." });
-            }
+            var category = await _context.Categories
+                .Include(c => c.Event)
+                .FirstOrDefaultAsync(c => c.CategoryID == id);
 
-            if (dto.CategoryName != null) cat.CategoryName = dto.CategoryName;
-            if (dto.DistanceKm.HasValue) cat.DistanceKm = dto.DistanceKm;
-            if (dto.EntryFee.HasValue) cat.EntryFee = dto.EntryFee.Value;
-            if (dto.MaxParticipants.HasValue) cat.MaxParticipants = dto.MaxParticipants.Value;
+            if (category == null) return NotFound(new { message = "Category not found." });
+
+            if (role != "Organiser" || category.Event.OrganiserID != userId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Forbidden. Only the event owner can update categories." });
+
+            var categoryName = dto.CategoryName?.Trim() ?? string.Empty;
+            if (categoryName.Length == 0)
+                return BadRequest(new { message = "A category name is required." });
+
+            var nameTaken = await _context.Categories
+                .AnyAsync(c => c.EventID == category.EventID && c.CategoryID != id &&
+                               c.CategoryName.ToLower() == categoryName.ToLower());
+
+            if (nameTaken)
+                return Conflict(new { message = $"A category named '{categoryName}' already exists for this event." });
+
+            category.CategoryName = categoryName;
+            category.DistanceKm = dto.DistanceKm;
+            category.EntryFee = dto.EntryFee;
+            category.MaxParticipants = dto.MaxParticipants;
 
             await _context.SaveChangesAsync();
-
-            var responseDto = new CategoryResponseDto(
-                cat.CategoryID,
-                cat.CategoryName,
-                cat.DistanceKm,
-                cat.EntryFee,
-                cat.MaxParticipants
-            );
-
-            return Ok(responseDto);
+            return Ok(new { message = "Category updated successfully." });
         }
 
-        /// <summary>
-        /// Removes a category provided it has no participant enrolments.
-        /// </summary>
-        /// <response code="204">Category deleted successfully.</response>
-        /// <response code="401">Unauthorized session.</response>
-        /// <response code="403">Logged-in organiser does not own the parent event.</response>
-        /// <response code="404">Category not found.</response>
-        /// <response code="409">Cannot delete a category that already has enrolments.</response>
-        [HttpDelete("api/categories/{id}")]
-        [RequireRole("Organiser")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [HttpDelete("categories/{id:int}")]
         public async Task<IActionResult> DeleteCategory(int id)
         {
-            var cat = await _context.Categories.Include(c => c.Event).FirstOrDefaultAsync(c => c.CategoryID == id);
-            if (cat == null)
-            {
-                return NotFound(new { message = "Category not found." });
-            }
+            var role = HttpContext.Session.GetString("Role");
+            var userId = HttpContext.Session.GetInt32("UserId");
 
-            var organiserId = HttpContext.Session.GetInt32("UserId")!.Value;
-            if (cat.Event?.OrganiserID != organiserId)
-            {
-                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Forbidden. You do not own the parent event of this category." });
-            }
+            var category = await _context.Categories
+                .Include(c => c.Event)
+                .Include(c => c.Enrolments)
+                .FirstOrDefaultAsync(c => c.CategoryID == id);
 
-            var hasEnrolments = await _context.Enrolments.AnyAsync(e => e.CategoryID == id);
-            if (hasEnrolments)
-            {
-                return Conflict(new { message = "Cannot delete a category that has registered participants." });
-            }
+            if (category == null) return NotFound(new { message = "Category not found." });
 
-            _context.Categories.Remove(cat);
+            if (role != "Organiser" || category.Event.OrganiserID != userId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Forbidden. Only the event owner can delete categories." });
+
+            if (category.Enrolments.Any())
+                return Conflict(new { message = "This category already has enrolments, so it cannot be deleted." });
+
+            _context.Categories.Remove(category);
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            return Ok(new { message = "Category deleted successfully." });
         }
     }
 }

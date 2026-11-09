@@ -1,0 +1,153 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    string userRole = Context.Session.GetString("Role") ?? Context.Session.GetString("UserRole") ?? "Participant";
+    string fullName = Context.Session.GetString("UserFullName") ?? "User";
+}
+
+<div class="container my-4 text-light">
+    @if (userRole == "Organiser" || userRole == "Organizer")
+    {
+        <!-- ================= ORGANISER COMMAND CENTER ================= -->
+        var eventsList = ViewBag.Events as List<RaceDay.Mvc.Models.EventSummaryViewModel> ?? new();
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-warning"><i class="bi bi-shield-lock-fill me-2"></i>Organiser Command Center</h2>
+            <p class="text-light mb-0">Welcome back, <span class="fw-bold text-warning">@fullName</span>! Manage race events and review participants.</p>
+        </div>
+        <a asp-controller="Organiser" asp-action="CreateEvent" class="btn btn-warning text-dark fw-bold">
+            <i class="bi bi-plus-circle-fill me-1"></i> Add New Event
+        </a>
+    </div>
+
+    @if (!eventsList.Any())
+        {
+    <div class="alert alert-dark text-center py-5 border border-secondary text-light">
+        <i class="bi bi-calendar-x display-4 text-warning mb-3 d-block"></i>
+        <h4>No races created yet.</h4>
+        <p class="text-muted">Click the button above to publish your first race event.</p>
+    </div>
+        }
+        else
+        {
+    <div class="row row-cols-1 row-cols-md-2 g-4">
+        @foreach (var ev in eventsList)
+                {
+        <div class="col">
+            <div class="card bg-dark text-light border-secondary shadow-sm h-100">
+                @if (!string.IsNullOrEmpty(ev.BannerImageUrlResolved))
+                {
+                    <img src="@ev.BannerImageUrlResolved" class="card-img-top" alt="@ev.EventName" style="height: 140px; object-fit: cover;" onerror="this.style.display='none'" />
+                }
+                <div class="card-body d-flex flex-column">
+                    <h4 class="text-warning">@ev.EventName</h4>
+                    <p class="text-light small mb-2">
+                        <i class="bi bi-calendar-event text-warning me-1"></i> @ev.EventDate.ToString("yyyy-MM-dd") |
+                        <i class="bi bi-geo-alt text-warning me-1"></i> @ev.VenueName, @ev.City
+                    </p>
+                    <p class="text-light flex-grow-1">@(ev.Description?.Length > 100 ? ev.Description.Substring(0, 100) + "..." : ev.Description)</p>
+
+                    <div class="d-flex flex-wrap gap-2 mt-3 pt-3 border-top border-secondary">
+                        <a asp-controller="Event" asp-action="Details" asp-route-id="@ev.EventID" class="btn btn-sm btn-outline-light">
+                            <i class="bi bi-eye me-1"></i> Preview
+                        </a>
+                        <a asp-controller="Organiser" asp-action="EditEvent" asp-route-id="@ev.EventID" class="btn btn-sm btn-outline-warning">
+                            <i class="bi bi-pencil-square me-1"></i> Edit
+                        </a>
+                        <a asp-controller="Organiser" asp-action="ManageCategories" asp-route-id="@ev.EventID" class="btn btn-sm btn-outline-info">
+                            <i class="bi bi-diagram-3 me-1"></i> Categories
+                        </a>
+                        <a asp-controller="Organiser" asp-action="Participants" asp-route-id="@ev.EventID" class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-people me-1"></i> Roster
+                        </a>
+                        <form asp-controller="Organiser" asp-action="DeleteEvent" asp-route-id="@ev.EventID" method="post" class="d-inline"
+                              data-busy data-confirm="Delete @ev.EventName? This cannot be undone.">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash me-1"></i> Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+                }
+    </div>
+        }
+    }
+    else
+    {
+ <!-- ================= ATHLETE / PARTICIPANT DASHBOARD ================= -->
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="text-warning"><i class="bi bi-speedometer2 me-2"></i>Athlete Dashboard</h2>
+            <p class="text-light">Welcome back, <span class="fw-bold text-warning">@fullName</span>!</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- My Enrolments -->
+        <div class="col-md-6">
+            <div class="card bg-dark text-light border-secondary shadow-sm h-100">
+                <div class="card-header bg-black border-secondary">
+                    <h5 class="mb-0 text-warning"><i class="bi bi-ticket-perforated me-2"></i>My Enrolments</h5>
+                </div>
+                <div class="card-body">
+                    @if (ViewBag.Enrolments == null || ViewBag.Enrolments.Count == 0)
+                        {
+                    <p class="text-muted text-center my-3">You are not enrolled in any upcoming races yet.</p>
+                    <div class="text-center">
+                        <a asp-controller="Event" asp-action="Index" class="btn btn-sm btn-warning text-dark fw-bold">Browse Events</a>
+                    </div>
+                        }
+                        else
+                        {
+                    <ul class="list-group list-group-flush bg-transparent">
+                        @foreach (var enr in ViewBag.Enrolments)
+                                {
+                        <li class="list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong class="text-warning">@enr.EventName</strong><br />
+                                <small class="text-light">Category: @enr.CategoryName | Bib: @enr.BibNumber</small>
+                            </div>
+                            <span class="badge bg-warning text-dark">@enr.Status</span>
+                        </li>
+                                }
+                    </ul>
+                        }
+                </div>
+            </div>
+        </div>
+
+        <!-- Race Results -->
+        <div class="col-md-6">
+            <div class="card bg-dark text-light border-secondary shadow-sm h-100">
+                <div class="card-header bg-black border-secondary">
+                    <h5 class="mb-0 text-warning"><i class="bi bi-trophy me-2"></i>My Race Results</h5>
+                </div>
+                <div class="card-body">
+                    @if (ViewBag.Results == null || ViewBag.Results.Count == 0)
+                        {
+                    <p class="text-muted text-center my-3">No recorded race results found.</p>
+                        }
+                        else
+                        {
+                    <ul class="list-group list-group-flush bg-transparent">
+                        @foreach (var res in ViewBag.Results)
+                                {
+                        <li class="list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong class="text-warning">@res.EventName</strong><br />
+                                <small class="text-light">@res.CategoryName &middot; Bib @res.BibNumber</small><br />
+                                <small class="text-light"><i class="bi bi-stopwatch me-1"></i>@res.FinishTime.ToString(@"hh\:mm\:ss")</small>
+                            </div>
+                            <span class="badge bg-success">Pos: @res.Position</span>
+                        </li>
+                                }
+                    </ul>
+                        }
+                </div>
+            </div>
+        </div>
+    </div>
+    }
+</div>

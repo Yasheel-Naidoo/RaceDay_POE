@@ -1,0 +1,25 @@
+@{
+    ViewData["Title"] = "User Profile";
+    string userFullName = Context.Session.GetString("UserFullName") ?? "User";
+    string userRole = Context.Session.GetString("Role") ?? Context.Session.GetString("UserRole") ?? "Participant";
+}
+
+<div class="container my-4 text-light">
+    <div class="card bg-dark border-secondary shadow-sm p-4">
+        <h2 class="text-warning mb-3"><i class="bi bi-person-circle me-2"></i>User Profile</h2>
+        <hr class="border-secondary" />
+        <div class="mb-3">
+            <label class="text-muted">Full Name:</label>
+            <h4>@userFullName</h4>
+        </div>
+        <div class="mb-3">
+            <label class="text-muted">Account Role:</label>
+            <p><span class="badge bg-warning text-dark fs-6">@userRole</span></p>
+        </div>
+        <div class="mt-4">
+            <a asp-controller="Account" asp-action="Dashboard" class="btn btn-outline-warning">
+                <i class="bi bi-speedometer2 me-1"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>

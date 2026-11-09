@@ -77,6 +77,13 @@ namespace RaceDay.Tests
             return context;
         }
 
+        private sealed class NullBlobService : IBlobService
+        {
+            public Task<string> UploadFileAsync(IFormFile file, string folderPrefix) => Task.FromResult(string.Empty);
+
+            public Task<bool> DeleteFileAsync(string fileUrl) => Task.FromResult(true);
+        }
+
         private void SetFakeSession(ControllerBase controller, int userId, string role)
         {
             var httpContext = new DefaultHttpContext();
@@ -94,7 +101,7 @@ namespace RaceDay.Tests
         public async Task Test1_PublicGetEvents_ReturnsAllEventsWithDtoProjections()
         {
             using var context = GetDatabaseContext();
-            var controller = new EventsController(context);
+            var controller = new EventsController(context, new NullBlobService());
 
             var result = await controller.GetEvents(null);
 
@@ -130,7 +137,7 @@ namespace RaceDay.Tests
         public async Task Test3_OrganiserCreatesEvent_BindsOwnershipAndReturns201()
         {
             using var context = GetDatabaseContext();
-            var controller = new EventsController(context);
+            var controller = new EventsController(context, new NullBlobService());
             SetFakeSession(controller, userId: 1, role: "Organiser");
 
             var dto = new CreateEventDto(

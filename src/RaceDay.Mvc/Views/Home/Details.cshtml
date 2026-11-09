@@ -1,0 +1,57 @@
+@model RaceDay.Mvc.Models.EventSummaryViewModel
+@{
+    ViewData["Title"] = Model.EventName;
+}
+
+<div class="card shadow-sm border-0 mb-4 overflow-hidden">
+    <img src="@(string.IsNullOrEmpty(Model.BannerImageUrl) ? "https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?w=1200" : Model.BannerImageUrl)"
+         class="w-100" style="max-height: 340px; object-fit: cover;" alt="@Model.EventName" />
+    <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+                <h2 class="text-primary mb-1">@Model.EventName</h2>
+                <div class="text-muted">
+                    <i class="bi bi-geo-alt-fill text-danger me-1"></i>@Model.VenueName (@Model.City, @Model.Province)
+                </div>
+            </div>
+            <span class="badge @(Model.Status == "Open" ? "bg-success" : "bg-danger") fs-6">@Model.Status</span>
+        </div>
+        <p class="lead">@Model.Description</p>
+        <div class="text-secondary small">
+            <strong>Race Date:</strong> @Model.EventDate.ToString("dddd, dd MMMM yyyy") | <strong>Start Time:</strong> @Model.StartTime.ToString(@"hh\:mm")
+        </div>
+    </div>
+</div>
+
+<h4 class="mb-3">Official Entry Categories</h4>
+<div class="row g-3">
+    @foreach (var cat in Model.Categories)
+    {
+        var isFull = cat.EnrolledCount >= cat.MaxParticipants;
+    <div class="col-md-6">
+        <div class="card border p-3 h-100 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0">@cat.CategoryName</h5>
+                <span class="fs-5 fw-bold text-success">R @cat.EntryFee.ToString("N2")</span>
+            </div>
+            <div class="text-muted small mb-3">
+                Distance: <strong>@cat.DistanceKm km</strong> | Enrolled: <strong>@cat.EnrolledCount / @cat.MaxParticipants</strong>
+            </div>
+            @if (Model.Status == "Open" && !isFull)
+                {
+            <form asp-controller="Participant" asp-action="Enrol" method="post">
+                <input type="hidden" name="eventId" value="@Model.EventID" />
+                <input type="hidden" name="categoryId" value="@cat.CategoryID" />
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-ticket-perforated me-1"></i>Enrol in @cat.CategoryName
+                </button>
+            </form>
+                }
+                else
+                {
+            <button class="btn btn-secondary w-100" disabled>Capacity Reached / Closed</button>
+                }
+        </div>
+    </div>
+    }
+</div>

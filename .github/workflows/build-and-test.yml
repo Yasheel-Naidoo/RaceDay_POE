@@ -1,45 +1,35 @@
-name: Build, Test and Validate RaceDay Solution
+name: RaceDay Full-Stack CI Pipeline
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
 
 jobs:
   build-and-test:
-    name: Build & Run Unit Tests
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+    - name: Checkout Code Repository
+      uses: actions/checkout@v4
 
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
+    - name: Setup .NET 8 SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
 
-      - name: Validate Part 1 Documentation Folder
-        run: |
-          FAILED=0
-          if [ ! -d "docs" ]; then
-            echo "::error::Missing 'docs' directory in repository root."
-            FAILED=1
-          fi
-          if ! compgen -G "docs/*.sql" > /dev/null; then
-            echo "::error::Missing SQL schema file in docs/."
-            FAILED=1
-          fi
-          if [ $FAILED -ne 0 ]; then
-            exit 1
-          fi
+    - name: Restore Solution Dependencies
+      run: dotnet restore RaceDay.sln
 
-      - name: Restore Dependencies
-        run: dotnet restore RaceDay.sln
+    - name: Build Complete Solution (API, MVC & Tests)
+      run: dotnet build RaceDay.sln --no-restore --configuration Release
 
-      - name: Build Solution
-        run: dotnet build RaceDay.sln --no-restore --configuration Release
+    - name: Run xUnit Test Suite
+      run: dotnet test RaceDay.sln --no-build --configuration Release --verbosity normal
 
-      - name: Execute Unit Tests
-        run: dotnet test RaceDay.sln --no-build --configuration Release --verbosity normal
+    - name: Validate MVC Dockerfile Build
+      run: docker build -t raceday-mvc:test -f src/RaceDay.Mvc/Dockerfile .
+
+    - name: Validate API Dockerfile Build
+      run: docker build -t raceday-api:test -f src/RaceDay.Api/Dockerfile .

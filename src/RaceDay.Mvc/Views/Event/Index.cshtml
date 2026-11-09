@@ -1,0 +1,62 @@
+@model IEnumerable<RaceDay.Mvc.Models.EventSummaryViewModel>
+
+    @{
+    ViewData["Title"] = "Events List";
+    }
+
+    <div class="container my-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-calendar-event-fill text-warning me-2"></i>Upcoming Events</h2>
+            <form asp-action="Index" method="get" class="d-flex gap-2">
+                <input type="text" name="search" class="form-control" placeholder="Search events..." value="@ViewData["SearchQuery"]" />
+                <button type="submit" class="btn btn-outline-warning"><i class="bi bi-search"></i></button>
+            </form>
+        </div>
+
+        @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-dark text-center py-5">
+            <i class="bi bi-calendar-x display-4 text-muted mb-3 d-block"></i>
+            <h4>No events available.</h4>
+            <p class="text-muted">Check back soon for new race listings.</p>
+        </div>
+    }
+    else
+    {
+        <div class="list-group">
+            @foreach (var ev in Model)
+            {
+            <div class="list-group-item list-group-item-action bg-dark text-light border-secondary mb-3 rounded p-3 shadow-sm">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        @if (!string.IsNullOrEmpty(ev.BannerImageUrlResolved))
+                            {
+                        <img src="@ev.BannerImageUrlResolved" class="img-fluid rounded" alt="@ev.EventName" style="height: 120px; width: 100%; object-fit: cover;" onerror="this.style.display='none'" />
+                            }
+                            else
+                            {
+                        <div class="bg-secondary rounded d-flex align-items-center justify-content-center text-muted" style="height: 120px;">
+                            <i class="bi bi-image fs-1"></i>
+                        </div>
+                            }
+                    </div>
+                    <div class="col-md-6">
+                        <h4 class="text-warning mb-1">@ev.EventName</h4>
+                        <p class="mb-1 text-muted small">
+                            <i class="bi bi-calendar-check me-1"></i> @ev.EventDate.ToString("yyyy-MM-dd") |
+                            <i class="bi bi-clock me-1"></i> @ev.StartTime |
+                            <i class="bi bi-geo-alt me-1"></i> @ev.VenueName, @ev.City
+                        </p>
+                        <p class="mb-0 text-light">@(ev.Description?.Length > 120 ? ev.Description.Substring(0, 120) + "..." : ev.Description)</p>
+                    </div>
+                    <div class="col-md-3 text-md-end mt-3 mt-md-0">
+                        <a asp-action="Details" asp-route-id="@ev.EventID" class="btn btn-warning w-100">
+                            <i class="bi bi-arrow-right-circle me-1"></i> View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            }
+        </div>
+    }
+    </div>

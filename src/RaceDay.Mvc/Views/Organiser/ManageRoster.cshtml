@@ -1,0 +1,88 @@
+@model List<RaceDay.Mvc.Models.ParticipantEnrolmentViewModel>
+@{
+    ViewData["Title"] = "Event Roster & Time Capture";
+    int eventId = ViewBag.EventId;
+    string eventName = ViewBag.EventName ?? "Event";
+    var results = ViewBag.Results as List<RaceDay.Mvc.Models.ParticipantResultViewModel> ?? new();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="bi bi-stopwatch-fill text-primary me-2"></i>Athlete Roster & Results Capture</h2>
+        <p class="text-muted mb-0">@eventName</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="ExportResults" asp-route-id="@eventId" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-download me-1"></i> Export CSV
+        </a>
+        <a asp-action="Dashboard" class="btn btn-outline-secondary btn-sm">Back to Dashboard</a>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">No athletes have registered for this event yet.</div>
+}
+else
+{
+    <div class="table-responsive bg-white rounded shadow-sm p-3">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Bib Number</th>
+                    <th>Athlete Name</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Recorded Result</th>
+                    <th>Submit Official Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var athlete in Model)
+                {
+                    var result = results.FirstOrDefault(r => r.EnrolmentId == athlete.EnrolmentID);
+                    var recordedTime = result == null ? string.Empty : result.FinishTime.ToString(@"hh\:mm\:ss");
+
+                    <tr>
+                        <td class="font-monospace fw-bold">@athlete.BibNumber</td>
+                        <td>@athlete.ParticipantName</td>
+                        <td>@athlete.CategoryName</td>
+                        <td><span class="badge @(athlete.Status == "Confirmed" ? "bg-success" : "bg-danger")">@athlete.Status</span></td>
+                        <td>
+                            @if (result != null)
+                            {
+                                <span class="badge bg-dark font-monospace">@recordedTime</span>
+                                <span class="text-muted small ms-1">pos @result.Position</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">Not captured</span>
+                            }
+                        </td>
+                        <td>
+                            @if (athlete.Status == "Confirmed")
+                            {
+                                <form asp-action="SubmitResult" method="post" class="d-flex gap-2" data-busy>
+                                    <input type="hidden" name="eventId" value="@eventId" />
+                                    <input type="hidden" name="EnrolmentID" value="@athlete.EnrolmentID" />
+                                    <input type="text" name="FinishTime" class="form-control form-control-sm" placeholder="03:15:20"
+                                           style="width: 110px;" value="@recordedTime" required />
+                                    <input type="number" name="Position" class="form-control form-control-sm" placeholder="Pos"
+                                           style="width: 70px;" min="1" value="@(result?.Position)" required />
+                                    <input type="hidden" name="Status" value="Completed" />
+                                    <button type="submit" class="btn btn-success btn-sm">@(result != null ? "Update" : "Save")</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">Cannot record (Withdrawn)</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <p class="text-muted small mt-2">Finish time format is hh:mm:ss, for example 03:15:20.</p>
+}
